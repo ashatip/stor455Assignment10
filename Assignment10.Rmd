@@ -1,0 +1,19 @@
+---
+title: "Assignment10"
+author: "Ahmet Hatip"
+date: "12/1/2018"
+output: html_document
+---
+
+```{r}
+library(readr)
+```
+
+
+# Section 1: ANOVA Analysis
+
+# Section 2: Logistic Regression
+
+# Section 3: Multiple Linear Regression
+
+# Section 4: Furhter Analysis
