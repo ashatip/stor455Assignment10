@@ -13,6 +13,8 @@ fall<- data.frame(fall)
 spring<- data.frame(spring)
 print(dim(spring))
 print(dim(fall))
+```
+```{r}
 colnames(fall)
 #Dropping code columns in
 fall=fall[ , -which(names(fall) %in% c("Concrete.Code","Habitat.Code","Shade.Code","Leaf.Color.Code","Leaf.Drop.Code","Fruit.Code","Maple.Code"))]
@@ -27,11 +29,15 @@ fall=fall[!(duplicated(fall) | duplicated(fall, fromLast = TRUE)), ]
 spring=spring[!(duplicated(spring) | duplicated(spring, fromLast = TRUE)), ]
 print(dim(fall))
 print(dim(spring))
+```
+
+```{r}
 # going to combine Srping's Flowers and Fall's Fruit columns
 colnames(fall)[which(names(fall) == "Fruit")] <- "Fruit-Flowers"
 colnames(spring)[which(names(spring) == "Flowers")] <- "Fruit-Flowers"
 fall$Seasons="Fall"
 spring$Seasons="Spring"
+# making fall and spring combinable
 fall$Leaf.buds=""
 fall$Leaves.unfolded=""
 fall$Leaves.unfolded=""
@@ -40,12 +46,17 @@ spring$Leaf.Color=""
 spring$Leaves.Dropping=""
 spring$Other.Comments=""
 fall$Tree.health=""
+
 sort(colnames(fall))
 length(colnames(fall))
 sort(colnames(spring))
 length(colnames(spring))
-rbind(fall, spring)
-View(rbind(fall, spring))
+```
+```{r}
+#combined them both
+full=rbind(fall, spring)
+#adding coded values
+
 
 ```
 
