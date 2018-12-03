@@ -7,6 +7,7 @@ output: html_document
 
 ```{r}
 library(readr)
+library(bestglm)
 spring=read_csv("spring_maple_monitoringAug17clean.csv")
 fall=read_csv("fall_maple_monitoringAug17coded.csv")
 fall<- data.frame(fall)
@@ -48,23 +49,89 @@ spring$Other.Comments=""
 fall$Tree.health=""
 
 sort(colnames(fall))
+
 length(colnames(fall))
 sort(colnames(spring))
 length(colnames(spring))
 ```
+
 ```{r}
 #combined them both
 full=rbind(fall, spring)
 #adding coded values
+#scaling Latitude, Longitude
+full$LatitudeS=scale(full$Latitude)
+full$LongitudeS=scale(full$Longitude)
+full$MapleSpecies=factor(full$Maple.Species)
+full$Time=strptime(full$Date, "%m/%d/%y")
+full$ConcreteF= ifelse(full$Concrete=="Yes", 1, 0)
+full$ShadeF= ifelse(full$Shade=="Yes", 1, 0)
+useMe=full[,c("Circumference_in","ConcreteF","Time","Habitat","LatitudeS","LongitudeS","MapleSpecies","ShadeF")]
+```
 
-
+```{r}
+sapply(useMe, class)
+```
+```{r}
+for(col in colnames(useMe)){
+  cat("\n",col,sum(is.na(useMe[col])))
+}
 ```
 
 
+
+
 # Section 1: ANOVA Analysis
+```{r}
+#one: tree size and tyoe
+#two: tree size in type vs concrete
+#two with: tree size in type vs concrete interaction: shade
+```
+
 
 # Section 2: Logistic Regression
+```{r}
+# drop all nan values:
+logData=na.omit(useMe)
+View(logData)
+```
+
+
+```{r}
+
+#predict shade
+drops <- "ShadeF"
+# y is what we are trying to predict
+y=logData$ShadeF
+# X is all the variables that will be used to predict
+X=logData[ , !(names(logData) %in% drops)]
+
+# idk but for this package u have to do this
+Xy<-as.data.frame(cbind(X,y))
+# and do this for it to work
+names(logData)<-c(paste("X",1:length(colnames(X)),sep=""),"y")
+# and it works
+bestAIC <- bestglm(Xy, IC="AIC")
+bestBIC <- bestglm(Xy, IC="BIC")
+bestEBIC <- bestglm(Xy, IC="BICg")
+bestBICq <- bestglm(Xy, IC="BICq")
+
+```
+
+```{r}
+logData$ShadeF
+```
+
+
 
 # Section 3: Multiple Linear Regression
+```{r}
+#predict tree size
+```
 
-# Section 4: Furhter Analysis
+
+# Section 4: Further Analysis
+```{r}
+
+```
+
