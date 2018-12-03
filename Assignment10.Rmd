@@ -1,4 +1,4 @@
----
+
 title: "Assignment10"
 author: "Ahmet Hatip"
 date: "12/1/2018"
@@ -7,6 +7,46 @@ output: html_document
 
 ```{r}
 library(readr)
+spring=read_csv("spring_maple_monitoringAug17clean.csv")
+fall=read_csv("fall_maple_monitoringAug17coded.csv")
+fall<- data.frame(fall)
+spring<- data.frame(spring)
+print(dim(spring))
+print(dim(fall))
+colnames(fall)
+#Dropping code columns in
+fall=fall[ , -which(names(fall) %in% c("Concrete.Code","Habitat.Code","Shade.Code","Leaf.Color.Code","Leaf.Drop.Code","Fruit.Code","Maple.Code"))]
+#changing names for columns to match
+colnames(spring)[which(names(spring) == "Tree.ID.Number")] <- "Tree.ID"
+colnames(spring)[which(names(spring) == "Shading")] <- "Shade"
+colnames(fall)[which(names(fall) == "Tree.Circumference_in")] <- "Circumference_in"
+#deleting duplicated
+print(dim(fall))
+print(dim(spring))
+fall=fall[!(duplicated(fall) | duplicated(fall, fromLast = TRUE)), ]
+spring=spring[!(duplicated(spring) | duplicated(spring, fromLast = TRUE)), ]
+print(dim(fall))
+print(dim(spring))
+# going to combine Srping's Flowers and Fall's Fruit columns
+colnames(fall)[which(names(fall) == "Fruit")] <- "Fruit-Flowers"
+colnames(spring)[which(names(spring) == "Flowers")] <- "Fruit-Flowers"
+fall$Seasons="Fall"
+spring$Seasons="Spring"
+fall$Leaf.buds=""
+fall$Leaves.unfolded=""
+fall$Leaves.unfolded=""
+spring$Damage=""
+spring$Leaf.Color=""
+spring$Leaves.Dropping=""
+spring$Other.Comments=""
+fall$Tree.health=""
+sort(colnames(fall))
+length(colnames(fall))
+sort(colnames(spring))
+length(colnames(spring))
+rbind(fall, spring)
+View(rbind(fall, spring))
+
 ```
 
 
