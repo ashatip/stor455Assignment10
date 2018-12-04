@@ -6,8 +6,13 @@ output: html_document
 ---
 
 ```{r}
-library(readr)
 library(bestglm)
+```
+
+```{r}
+library(lubridate)
+library(readr)
+
 spring=read_csv("spring_maple_monitoringAug17clean.csv")
 fall=read_csv("fall_maple_monitoringAug17coded.csv")
 fall<- data.frame(fall)
@@ -54,24 +59,46 @@ length(colnames(fall))
 sort(colnames(spring))
 length(colnames(spring))
 ```
-
 ```{r}
 #combined them both
-full=rbind(fall, spring)
+full1=rbind(fall, spring)
+
+```
+
+```{r}
+#looked at map, Longitude should be between -100 to -40 and Latitude between 35 to 50
+useM=subset(full1,(Longitude>-100)&(Longitude<-40)&(Latitude>35)&(Latitude<50))
+#looking at hist for numeric values to see if there is any outliers
+for(i in c("Circumference_in","Latitude","Longitude")){
+  hist(useM[,i])
+}
+
+dim(useM)
+```
+```{r}
+#Circumference_in should always be postive and can't be greater than 1500 becauase #https://en.wikipedia.org/wiki/List_of_superlative_trees#Stoutest
+full=subset(useM,(Circumference_in>0)&(Circumference_in<1500))
+dim(full)
+```
+
+```{r}
 #adding coded values
 #scaling Latitude, Longitude
 full$LatitudeS=scale(full$Latitude)
 full$LongitudeS=scale(full$Longitude)
-full$MapleSpecies=factor(full$Maple.Species)
-full$Time=strptime(full$Date, "%m/%d/%y")
+full$MapleSpeciesF=factor(full$Maple.Species)
+full$DateN=strptime(full$Date, "%m/%d/%y")
+#getting year-min(year)
+full$yearM=factor(as.numeric(year(full$DateN))-min(as.numeric(year(full$DateN))))
 full$ConcreteF= ifelse(full$Concrete=="Yes", 1, 0)
-full$ShadeF= ifelse(full$Shade=="Yes", 1, 0)
-useMe=full[,c("Circumference_in","ConcreteF","Time","Habitat","LatitudeS","LongitudeS","MapleSpecies","ShadeF")]
+full$ShadeF= factor(full$Shade)
+full$SeasonsF=factor(full$Seasons)
+full$HabitatF=factor(full$Habitat)
+#some Circumference_in are negative, will make them positive
+full$Circumference_inP=abs(full$Circumference_in)
+useMe=full[,c("Circumference_inP","ConcreteF","yearM","HabitatF","LatitudeS","LongitudeS","MapleSpeciesF","ShadeF","SeasonsF")]
 ```
 
-```{r}
-sapply(useMe, class)
-```
 ```{r}
 for(col in colnames(useMe)){
   cat("\n",col,sum(is.na(useMe[col])))
@@ -83,51 +110,167 @@ for(col in colnames(useMe)){
 
 # Section 1: ANOVA Analysis
 ```{r}
-#one: tree size and tyoe
-#two: tree size in type vs concrete
-#two with: tree size in type vs concrete interaction: shade
+#one: tree size and type
+oneA=aov(Circumference_inP~MapleSpeciesF,data=useMe)
+summary(oneA)
+plot(oneA)
 ```
+
+conditions:
+1- Zero mean:looks like it has zero mean
+2- Constant variance: most of the points have a constant mean
+3- Normality:looks normal but a bit postive skewed and some fat tails
+4- Independence: one of my assumptions, cannot prove it 
+
+the p-value is low, so it shows that the species of maples can explain the Circumference of the maple trees which makes sense
+
+confidence tests??
+
+```{r}
+#two: tree size in type vs shade
+twoA=aov(Circumference_inP~MapleSpeciesF+ShadeF,data=useMe)
+summary(twoA)
+plot(twoA)
+```
+
+conditions:
+1- Zero mean:
+2- Constant variance:
+3- Normality:
+4- Independence: one of my assumptions, cannot prove it 
+
+```{r}
+#two with: tree size in type vs concrete interaction
+twoW=aov(Circumference_inP~MapleSpeciesF+ShadeF+MapleSpeciesF*ShadeF,data=useMe)
+summary(twoW)
+plot(twoW)
+```
+
+conditions:
+1- Zero mean:
+2- Constant variance:
+3- Normality:
+4- Independence: one of my assumptions, cannot prove it 
 
 
 # Section 2: Logistic Regression
 ```{r}
 # drop all nan values:
 logData=na.omit(useMe)
-View(logData)
+dim(useMe)
+dim(logData)
+
 ```
 
 
 ```{r}
 
-#predict shade
-drops <- "ShadeF"
+#predict concrete
+drops <- "ConcreteF"
 # y is what we are trying to predict
-y=logData$ShadeF
+y=logData$ConcreteF
 # X is all the variables that will be used to predict
 X=logData[ , !(names(logData) %in% drops)]
 
 # idk but for this package u have to do this
 Xy<-as.data.frame(cbind(X,y))
+```
+
+
+
+```{r}
 # and do this for it to work
 names(logData)<-c(paste("X",1:length(colnames(X)),sep=""),"y")
 # and it works
-bestAIC <- bestglm(Xy, IC="AIC")
-bestBIC <- bestglm(Xy, IC="BIC")
-bestEBIC <- bestglm(Xy, IC="BICg")
-bestBICq <- bestglm(Xy, IC="BICq")
+bestAIC <- bestglm(Xy, IC="AIC",family = binomial)
+#bestBIC <- bestglm(Xy, IC="BIC",family = binomial)
+#bestEBIC <- bestglm(Xy, IC="BICg",family = binomial)
+#bestBICq <- bestglm(Xy, IC="BICq",family = binomial)
 
+```
+
+```{r} 
+bestAIC
 ```
 
 ```{r}
-logData$ShadeF
+besLog=glm(ConcreteF~
+Circumference_inP+
+HabitatF+
+MapleSpeciesF+
+ShadeF+
+SeasonsF,
+data=na.omit(useMe)
+)
+summary(besLog)
 ```
+##TODO
 
+discuss it 
 
 
 # Section 3: Multiple Linear Regression
 ```{r}
-#predict tree size
+#predict tree size all data
+library(leaps)
+bigMod = regsubsets(Circumference_inP~ConcreteF+yearM+HabitatF+LatitudeS+LongitudeS+MapleSpeciesF+ShadeF+SeasonsF,data=useMe,nvmax = 26,nbest = 26,really.big=T)
+
+ss=ShowSubsets(bigMod)
+
+ssCP=ss[order(ss$Cp,decreasing = F),]
+
+ssAR=ssCP[order(ssCP$adjRsq,decreasing = T),]
+ssCP
+ssAR
+
 ```
+```{r}
+(t(ssCP[1,]))
+```
+I think this one is the best one because it has the lowest Cp
+
+```{r}
+mod2Lm=lm(Circumference_inP~
+ConcreteF+  
+yearM+     
+HabitatF+      
+LatitudeS+
+MapleSpeciesF+
+ShadeF+
+SeasonsF,data=useMe)
+summary(mod2Lm)
+
+```
+Year's p-values is too high, will drop
+
+```{r}
+mod2Lm=lm(Circumference_inP~
+ConcreteF+  
+HabitatF+      
+LatitudeS+
+MapleSpeciesF+
+ShadeF+
+SeasonsF,data=useMe)
+summary(mod2Lm)
+```
+```{r}
+plot(mod2Lm)
+```
+
+
+Conditions for linear regression:
+1. Zero means: the residuals does look like they are centered at zero
+2. Constant Variance: the variance does looks like it is the same but towards the middle it grows
+3. Independence: I deleted duplicated data points because of independence, but this will be our biggest assumption because i did not collect the data
+4. Normality: looks normal but has a bit of fat tails and more postive skeweness
+
+sense:
+```{r}
+mod2Lm$coefficients
+
+```
+It does not really make sense to do this analyst. Nothing here causes a tree to grow but, using the coefficients we can see which characteritics causes a large tree. 
+Like when ConcreteF is 1, which means that the tree located  within 100 feet of buildings, concrete, or asphalt, they tend to be larger because the coefficient is postive. However, the less sun the tree gets the less larger it would be, which makes sense because larger trees would be above it.
 
 
 # Section 4: Further Analysis
