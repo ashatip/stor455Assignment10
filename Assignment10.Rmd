@@ -10,7 +10,9 @@ library(lubridate)
 library(readr)
 library(bestglm)
 library(stringr)
+```
 
+```{r}
 spring=read_csv("spring_maple_monitoringAug17clean.csv")
 fall=read_csv("fall_maple_monitoringAug17coded.csv")
 fall<- data.frame(fall)
@@ -356,7 +358,7 @@ Like when ConcreteF is 1, which means that the tree located  within 100 feet of 
 # Section 4: Further Analysis
 
 ```{r}
-useF=useM
+full1=na.omit(full1)
 library(ggplot2)
 library(ggthemes)
 library(raster)
@@ -369,20 +371,25 @@ cand <- getData("GADM", country= "CAN", level=1)
 canp=fortify(cand[cand$NAME_1 %in% prov,])
 ny=fortify(usa[usa$NAME_1 %in% states,])
 
-if(useF$Maple.Species=="Red Maple"){useF$color="red"}else
-if(useF$Maple.Species=="Silver Maple"){useF$color="grey"}else
-if(useF$Maple.Species=="Sugar Maple"){useF$color="yellow"}else
-if(useF$Maple.Species=="Norway Maple"){useF$color="green"}else{useF$color="black"}
+if(full1$Maple.Species=="Red Maple"){full1$color="red"}else
+if(full1$Maple.Species=="Silver Maple"){full1$color="grey"}else
+if(full1$Maple.Species=="Sugar Maple"){full1$color="yellow"}else
+if(full1$Maple.Species=="Norway Maple"){full1$color="green"}else{useF$color="black"}
 ```
-
 ```{r}
-
-useF=subset(useF,(Longitude>-80)&(Longitude<-60)&(Latitude>35)&(Latitude<50))
+full3=subset(full1,
+             (Longitude>-85)
+              &(Latitude>10)
+             )
+full2=subset(full3,
+             (Longitude< - 60)
+#             &(Latitude<50)
+)
+plot(y=full2$Latitude,x=full2$Longitude)
+useF=full2
 ```
 
-```{r}
-unique(useF$Maple.Species)
-```
+
 
 
 
@@ -395,7 +402,7 @@ gg <- gg + geom_map(data=ny, map=ny,
 gg <- gg + geom_map(data=canp, map=canp, 
                     aes(x=long, y=lat, map_id=id, group=group),
                     fill=NA, color="black")
-gg <- gg + geom_point(data=useF, aes(x=Longitude, y=Latitude, color=useF$color), 
+gg <- gg + geom_point(data=useF, aes(x=Longitude, y=Latitude, color=color), 
                       alpha=1, na.rm=TRUE)
 gg <- gg + scale_size(range=c(2,7))
 gg <- gg + scale_color_identity()
@@ -409,9 +416,6 @@ gg
 
 
 
-```{r}
-hist(full1$Longitude)
-hist(full1$Latitude)
-```
+
 
 
